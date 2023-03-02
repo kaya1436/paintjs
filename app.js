@@ -1,112 +1,119 @@
-const canvas = document.getElementById("jsCanvas");
-const ctx = canvas.getContext("2d");
-const colors = document.getElementsByClassName("jsColor");
-const range = document.getElementById("jsRange");
-const mode = document.getElementById("jsMode");
-const saveBtn = document.getElementById("jsSave");
-
-const INITIAL_COLOR = "#2c2c2c";
-
-//캔버스 크기 설정
-canvas.width = 700;
-canvas.height = 500;
-
-//stroke = 선, fill = 면
-//기본 설정: 배경 = 흰색,  브러쉬 = 검은색 2.5굵기
-ctx.fillStyle = "white";
-ctx.fillRect(0, 0, canvas.width, canvas.height);
-ctx.strokeStyle = INITIAL_COLOR;
-ctx.fillStyle = INITIAL_COLOR;
-ctx.lineWidth = 2.5;
-
-let painting = false;
-let filling = false;
-
-function stopPainting() {
-  painting = false;
-}
-
-function startPainting() {
-  painting = true;
-}
-
-function onMouseMove(event) {
-  const x = event.offsetX; //마우스 좌표
-  const y = event.offsetY;
-  if (!painting) {
-    ctx.beginPath();
-    ctx.moveTo(x, y); //마우스 시작
-  } else {
-    ctx.lineTo(x, y); //마우스 시작지점-끝지점 선 그리기
-    ctx.stroke();
-  }
-}
-
-//색상 변경
-function handleColorClick(event) {
-  const color = event.target.style.backgroundColor; //color = 배경색상
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-}
-
-//선 굵기 변경
-function handleRangeChange(event) {
-  const size = event.target.value; //size = range값
-  ctx.lineWidth = size;
-}
-
-//색상 채우기
-function handleModeClick(event) {
-  if (filling === true) {
-    filling = false;
-    mode.innerText = "Fill";
-  } else {
-    filling = true;
-    mode.innerText = "Paint";
-  }
-}
-
-function handleCanvasClick(event) {
-  if (filling) {
-    ctx.fillRect(0, 0, canvas.width, canvas.height); //0부터 캔버스 크기만큼 채우기
-  }
-}
-
-//오른쪽 클릭 막음
-function handleCM(event) {
-  event.preventDefault();
-}
-
-//이미지 저장 버튼
-function handleSaveClick(event) {
-  const image = canvas.toDataURL(); //이미지 주소
-  const link = document.createElement("a"); //<a>태그 생성
-  link.href = image;
-  link.download = "PaintJS[🎨]"; //이미지 저장 이름
-  link.click();
-}
-
-if (canvas) {
-  canvas.addEventListener("mousemove", onMouseMove);
-  canvas.addEventListener("mousedown", startPainting); //마우스 드래그 시작
-  canvas.addEventListener("mouseup", stopPainting); //마우스 드래그 끝
-  canvas.addEventListener("mouseleave", stopPainting); //마우스가 캔버스 벗어날 때
-  canvas.addEventListener("click", handleCanvasClick);
-  canvas.addEventListener("contextmenu", handleCM);
-}
-
-Array.from(colors).forEach((color) =>
-  color.addEventListener("click", handleColorClick)
+const saveBtn = document.getElementById("save");
+const textInput = document.getElementById("text");
+const fileInput = document.getElementById("file");
+const modeBtn = document.getElementById("mode-btn");
+const destroyBtn = document.getElementById("destroy-btn");
+const eraserBtn = document.getElementById("eraser-btn");
+const colorOptions = Array.from(
+  document.getElementsByClassName("color-option")
 );
+const color = document.getElementById("color");
+const lineWidth = document.getElementById("line-width");
+const canvas = document.querySelector("canvas");
+const ctx = canvas.getContext("2d");
+const CANVAS_WIDTH = 800;
+const CANVAS_HEIGHT = 800;
+canvas.width = CANVAS_WIDTH;
+canvas.height = CANVAS_HEIGHT;
+ctx.lineWidth = lineWidth.value;
+ctx.lineCap = "round";
+let isPainting = false;
+let isFilling = false;
 
-if (range) {
-  range.addEventListener("input", handleRangeChange);
+function onMove(event) {
+  if (isPainting) {
+    ctx.lineTo(event.offsetX, event.offsetY);
+    ctx.stroke();
+    return;
+  }
+  ctx.moveTo(event.offsetX, event.offsetY);
+}
+function startPainting() {
+  isPainting = true;
+}
+function cancelPainting() {
+  isPainting = false;
+  ctx.beginPath();
+}
+function onLineWidthChange(event) {
+  console.log(event.target.value);
+  ctx.lineWidth = event.target.value;
+}
+function onColorChange(event) {
+  ctx.strokeStyle = event.target.value;
+  ctx.fillStyle = event.target.value;
+}
+function onColorClick(event) {
+  const colorValue = event.target.dataset.color;
+  ctx.strokeStyle = colorValue;
+  ctx.fillStyle = colorValue;
+  color.value = colorValue;
+}
+function onModeClick() {
+  if (isFilling) {
+    isFilling = false;
+    modeBtn.innerText = "Fill";
+  } else {
+    isFilling = true;
+    modeBtn.innerText = "Draw";
+  }
+}
+function onCanvasClick() {
+  if (isFilling) {
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  }
+}
+function onDestroyClick() {
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+}
+function onEraserClick() {
+  ctx.strokeStyle = "white";
+  isFilling = false;
+  modeBtn.innerText = "Fill";
+}
+function onFileChange(event) {
+  const file = event.target.files[0];
+  const url = URL.createObjectURL(file);
+  const image = new Image();
+  image.src = url;
+  image.onload = function () {
+    ctx.drawImage(image, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    fileInput.value = null;
+  };
+}
+function onDoubleClick(event) {
+  const text = textInput.value;
+
+  if (text !== "") {
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.font = "68px serif";
+    ctx.fillText(text, event.offsetX, event.offsetY);
+    ctx.restore();
+  }
+}
+function onSaveClick() {
+  const url = canvas.toDataURL();
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "myDrawing.png";
+  a.click();
 }
 
-if (mode) {
-  mode.addEventListener("click", handleModeClick);
-}
+canvas.addEventListener("dblclick", onDoubleClick);
+canvas.addEventListener("mousemove", onMove);
+canvas.addEventListener("mousedown", startPainting);
+canvas.addEventListener("mouseup", cancelPainting);
+canvas.addEventListener("mouseleave", cancelPainting);
+canvas.addEventListener("click", onCanvasClick);
+lineWidth.addEventListener("change", onLineWidthChange);
+color.addEventListener("change", onColorChange);
 
-if (saveBtn) {
-  saveBtn.addEventListener("click", handleSaveClick);
-}
+colorOptions.forEach((color) => color.addEventListener("click", onColorClick));
+
+modeBtn.addEventListener("click", onModeClick);
+destroyBtn.addEventListener("click", onDestroyClick);
+eraserBtn.addEventListener("click", onEraserClick);
+fileInput.addEventListener("change", onFileChange);
+saveBtn.addEventListener("click", onSaveClick);
